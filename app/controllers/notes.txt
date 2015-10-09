@@ -1,0 +1,78 @@
+
+$(document).ready(function() {
+  player_hits();
+});
+
+function player_hits() {
+  $(document).on('click', 'form#hit_form input', function() {
+    $.ajax({
+      type: 'POST',               # request to be made on click
+      url: '/game/player/hit' 
+    }).done(function(msg) {
+      $('#game').replaceWith(msg); # to load after request
+    });
+    return false;
+  });
+}
+
+Rails has a built-in functionality for server-generated javascript resposne (SJR) that looks different (and is more convenient!) 
+
+To add an event-listener for AJAX in Rails, you don't have to write it in Javascript. All you have to do is add <code>remote: true</code> to your anchor tag:
+
+<% link_to vote_post_path(post, vote: true), method: 'post', remote: true do %>
+  <i class='icon-arrow-up'></i>
+<% end %>
+
+Ruby's built-in javascript will automatically transform that link into an AJAX request.
+
+If you look at the Rails' logs, a normal HTTP request will show up looking like this:
+
+Started POST '/posts/3/vote?vote=false' for 127.0.0.1 at 2015-11-12...
+Processing PostController#vote as HTML # <-- take note!!! It says HTML.
+
+But if it's an AJAX request (where you added <code>remote: true</code>), it will show up looking like this:
+
+Started POST '/posts/3/vote?vote=false' for 127.0.0.1 at 2015-11-12...
+Processing PostController#vote as JS # <-- See? It says JS.
+
+So how do we handle the AJAX request and HTML request differently? In Rails, there's an easy way to differentiate between the types of requests, and that's <code>respond_to</code>:
+
+def vote
+  @vote = Vote.create(voteable: @post, creator: current_user, vote: params[:vote])
+
+  respond_to do |format|
+
+    format.html do # if HTML request
+      if @vote.valid?
+        flash[:notice] = 'Your vote was counted.'
+      else
+        flash[:error] = 'You can only vote on a post once.'
+      end
+      redirect_to :back
+    end
+
+    format.js do # if Javascript request
+      # we leave this blank - by default Rails will try to render a JS view template with the same name as the action, i.e. /views/posts/vote.js.erb
+    end
+
+  end
+end
+
+In the example above, we left it blank, but oftentimes we would render json <code>render json: @post.to_json</code>
+
+In the JS file (/views/posts/vote.js.erb), we can write a combination of Javascript and Ruby code.
+
+To make our HTML element callable, we have to add an ID to them first, and it'd have to be dynamic so each one of them is unique. We can do this by writing something like this: 
+
+<span id="post_<%= @post.id %>_votes">
+  <%= post.total_votes %> votes
+</span>
+
+To update our total vote number, in the JS file, we write something like this:
+
+<% if @vote.valid? %>
+  $("#post_<%+ @post.id %>_votes").html("<%= @post.total_vote %> votes")
+<% else %>
+  alert('You can only vote on a post once.')
+<% end %>
+

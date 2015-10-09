@@ -1,13 +1,27 @@
 class PostsController < ApplicationController
-  before_action :require_user, except: [:index, :show] # make sure user is logged in
   before_action :set_post, only: [:show, :edit, :update, :vote]
+  before_action :require_user, except: [:index, :show] # make sure user is logged in
+  before_action :require_creator, only: [:edit, :update]
 
   def index
     @posts = Post.all.sort_by{|post| post.total_votes}.reverse
+
+    respond_to do |format|
+      format.html
+      format.xml {render :xml => @posts}
+      format.js {render :json => @posts.to_json}
+    end
   end
 
   def show
     @comment = Comment.new
+
+    respond_to do |format|
+      format.html
+      format.xml {render :xml => @post}
+      format.js {render :json => @post.to_json}
+    end
+
   end
 
   def new
@@ -39,25 +53,33 @@ class PostsController < ApplicationController
   end
 
   def vote
-    vote = Vote.create(vote: params[:vote], creator: current_user, voteable: @post)
+    @vote = Vote.create(vote: params[:vote], creator: current_user, voteable: @post)
 
-    if vote.valid?
-      flash['notice'] = "Your vote was casted."
-    else
-      flash['error'] = "You can only vote on a post once."
+    respond_to do |format|
+      format.html do 
+        if @vote.valid?
+          flash['notice'] = "Your vote was casted."
+        else
+          flash['error'] = "You can only vote on a post once."
+        end
+        redirect_to :back
+      end
+      format.js
     end
-
-    redirect_to :back
   end
 
   private
 
   def set_post
-    @post = Post.find(params[:id])
+    @post = Post.find_by slug: params[:id]
   end
 
   def post_params
     params.require(:post).permit(:title, :url, :description, category_ids: [])
+  end
+
+  def require_creator
+    access_denied unless logged_in? and (current_user == @post.creator || current_user.admin?)
   end
 
 end

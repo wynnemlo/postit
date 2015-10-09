@@ -36,9 +36,17 @@ div.nav_item {
     color: #fff;
     text-decoration: none;
   }
+  margin-right: 5px;
 }
 
 div.comment_votes {
   padding: 10px;
 }
 
+.icon-arrow-down {
+  background-position: -315px -96px;
+}
+
+.navbar .container {
+    padding-top: 10px;
+}

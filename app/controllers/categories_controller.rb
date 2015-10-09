@@ -1,6 +1,7 @@
 class CategoriesController < ApplicationController
-  before_action :require_user, only: [:new, :create]
   before_action :set_category, only: [:show]
+  before_action :require_user, only: [:new, :create]
+  before_action :require_admin, only: [:new, :create]
 
   def show
   end
@@ -23,7 +24,7 @@ class CategoriesController < ApplicationController
   private
 
   def set_category
-    @category = Category.find(params[:id])
+    @category = Category.find_by slug: params[:id]
   end
 
   def category_params

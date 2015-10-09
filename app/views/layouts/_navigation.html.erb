@@ -2,9 +2,6 @@
   <li>
     <%= link_to "Postit!", root_path, :class => 'brand' %>
   </li>
-  <li>
-    <%= link_to 'link', '' %>
-  </li>
 </ul>
 <div class='btn-group nav_item'>
   <%= link_to '#', class: 'btn btn-small dropdown-toggle', 'data-toggle' => 'dropdown' do %>
@@ -14,7 +11,7 @@
     <% Category.all.each do |category| %>
       <li><%= link_to category.name, category_path(category) %></li>
     <% end %>
-    <% if logged_in? %>
+    <% if logged_in? and current_user.admin? %>
       <li class="divider"></li>
       <li>
         <%= link_to(new_category_path) do %>
